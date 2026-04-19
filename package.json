@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:naturequest": "tsx --test tests/naturequest/*.test.ts",
+    "test:naturequest": "tsx --test --test-concurrency=1 tests/naturequest/*.test.ts",
     "test:mmi": "tsx --test tests/mmi/*.test.ts",
     "mmi:ingest": "tsx scripts/mmi/ingest.ts",
     "mmi:validate": "tsx scripts/mmi/validate.ts",

@@ -1,36 +1,60 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# NatureQuest
 
-## Getting Started
+NatureQuest is a gamified education MVP built with Next.js 16, Auth.js, Prisma, PostgreSQL, and Tailwind CSS.
 
-First, run the development server:
+## Local Setup
+
+Install dependencies:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+corepack pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Apply database migrations before testing authenticated flows:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+corepack pnpm prisma migrate deploy
+corepack pnpm prisma generate
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Run the development server:
 
-## Learn More
+```bash
+corepack pnpm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+Open [http://localhost:3000](http://localhost:3000). If that port is busy, Next.js will print the port it selected.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Production Smoke Test
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Build the app:
 
-## Deploy on Vercel
+```bash
+corepack pnpm run build
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+For a local `next start` smoke test, Auth.js needs the local host to be trusted:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```powershell
+$env:AUTH_TRUST_HOST = "true"
+corepack pnpm exec next start -p 3010
+```
+
+Then open [http://localhost:3010](http://localhost:3010) and verify:
+
+- register a new user
+- complete onboarding
+- land on the dashboard
+- open a quest
+- finish the quest and see reward feedback
+
+## Checks
+
+```bash
+corepack pnpm run test:naturequest
+corepack pnpm run test:mmi
+corepack pnpm run lint
+corepack pnpm run build
+```
+
+`test:naturequest` runs with one Node test worker for stability on Windows.
