@@ -33,7 +33,12 @@ export async function POST(_: Request, context: RouteContext) {
         data: {
           questTitle: result.quest.title,
           points: result.user.points,
+          totalPoints: result.user.points,
+          pointsReward: 0,
+          previousLevel: result.previousLevel,
           level: result.user.level,
+          leveledUp: result.leveledUp,
+          xpUntilNextLevel: result.xpUntilNextLevel,
         },
       });
     }
@@ -46,7 +51,10 @@ export async function POST(_: Request, context: RouteContext) {
         questTitle: result.quest.title,
         pointsReward: result.quest.pointsReward,
         totalPoints: result.user.points,
+        previousLevel: result.previousLevel,
         level: result.user.level,
+        leveledUp: result.leveledUp,
+        xpUntilNextLevel: result.xpUntilNextLevel,
         badges: result.newlyAwardedBadges,
       },
     });

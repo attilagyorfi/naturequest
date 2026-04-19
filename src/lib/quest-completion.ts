@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { calculateLevelFromPoints, getXpUntilNextLevel } from "@/lib/progress";
 
 export async function completeQuestBySlug(slug: string, userEmail: string) {
   const user = await prisma.user.findUnique({
@@ -38,11 +39,19 @@ export async function completeQuestBySlug(slug: string, userEmail: string) {
       alreadyCompleted: true,
       quest,
       user,
+      previousLevel: user.level,
+      leveledUp: false,
+      xpUntilNextLevel: getXpUntilNextLevel({
+        points: user.points,
+        level: user.level,
+      }),
       newlyAwardedBadges: [],
     };
   }
 
   return prisma.$transaction(async (tx) => {
+    const previousLevel = user.level;
+
     await tx.userQuestProgress.upsert({
       where: {
         userId_questId: {
@@ -73,7 +82,7 @@ export async function completeQuestBySlug(slug: string, userEmail: string) {
       },
     });
 
-    const calculatedLevel = Math.max(1, Math.floor(updatedUser.points / 50) + 1);
+    const calculatedLevel = calculateLevelFromPoints(updatedUser.points);
 
     const leveledUser = await tx.user.update({
       where: { id: user.id },
@@ -133,6 +142,12 @@ export async function completeQuestBySlug(slug: string, userEmail: string) {
       alreadyCompleted: false,
       quest,
       user: leveledUser,
+      previousLevel,
+      leveledUp: calculatedLevel > previousLevel,
+      xpUntilNextLevel: getXpUntilNextLevel({
+        points: leveledUser.points,
+        level: leveledUser.level,
+      }),
       newlyAwardedBadges,
     };
   });

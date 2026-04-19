@@ -16,6 +16,10 @@ export type AdventureProgress = {
   xpUntilNextLevel: number;
 };
 
+export function calculateLevelFromPoints(points: number) {
+  return Math.max(1, Math.floor(Math.max(0, points) / XP_PER_LEVEL) + 1);
+}
+
 export function getNextLevelTarget(level: number) {
   return Math.max(1, level) * XP_PER_LEVEL;
 }

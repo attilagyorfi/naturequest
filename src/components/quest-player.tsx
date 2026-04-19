@@ -35,7 +35,11 @@ export default function QuestPlayer({ slug, steps }: Props) {
   const [reward, setReward] = useState<{
     message: string;
     totalPoints: number | null;
+    previousLevel: number | null;
     level: number | null;
+    leveledUp: boolean;
+    xpUntilNextLevel: number | null;
+    pointsReward: number | null;
     badges: Badge[];
   } | null>(null);
 
@@ -67,7 +71,11 @@ export default function QuestPlayer({ slug, steps }: Props) {
       setReward({
         message: data.message ?? "Nem sikerült lezárni a küldetést.",
         totalPoints: null,
+        previousLevel: null,
         level: null,
+        leveledUp: false,
+        xpUntilNextLevel: null,
+        pointsReward: null,
         badges: [],
       });
       return;
@@ -76,7 +84,11 @@ export default function QuestPlayer({ slug, steps }: Props) {
     setReward({
       message: data.message ?? "Küldetés teljesítve.",
       totalPoints: data.data?.totalPoints ?? data.data?.points ?? null,
+      previousLevel: data.data?.previousLevel ?? null,
       level: data.data?.level ?? null,
+      leveledUp: data.data?.leveledUp ?? false,
+      xpUntilNextLevel: data.data?.xpUntilNextLevel ?? null,
+      pointsReward: data.data?.pointsReward ?? null,
       badges: data.data?.badges ?? [],
     });
   }

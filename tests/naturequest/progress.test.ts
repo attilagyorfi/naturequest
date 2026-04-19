@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   calculateAdventureProgress,
+  calculateLevelFromPoints,
   getNextLevelTarget,
   getXpUntilNextLevel,
 } from "../../src/lib/progress";
@@ -59,8 +60,15 @@ test("calculateAdventureProgress clamps impossible completed counts", () => {
 });
 
 test("level helpers follow the quest completion level formula", () => {
+  assert.equal(calculateLevelFromPoints(0), 1);
+  assert.equal(calculateLevelFromPoints(49), 1);
+  assert.equal(calculateLevelFromPoints(50), 2);
+  assert.equal(calculateLevelFromPoints(99), 2);
+  assert.equal(calculateLevelFromPoints(100), 3);
+  assert.equal(calculateLevelFromPoints(-10), 1);
   assert.equal(getNextLevelTarget(1), 50);
   assert.equal(getNextLevelTarget(4), 200);
   assert.equal(getXpUntilNextLevel({ points: 49, level: 1 }), 1);
   assert.equal(getXpUntilNextLevel({ points: 50, level: 1 }), 0);
+  assert.equal(getXpUntilNextLevel({ points: 120, level: 3 }), 30);
 });
