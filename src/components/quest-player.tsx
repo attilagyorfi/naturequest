@@ -1,7 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { getQuestQuiz, isCorrectQuizAnswer } from "@/lib/quest-player";
+import {
+  canSubmitQuizAnswer,
+  getQuestQuiz,
+  isCorrectQuizAnswer,
+} from "@/lib/quest-player";
 import RewardPanel from "@/components/reward-panel";
 
 type Step = {
@@ -37,8 +41,14 @@ export default function QuestPlayer({ slug, steps }: Props) {
 
   const currentStep = steps[stepIndex];
   const stepsDone = stepIndex >= steps.length;
+  const canCompleteQuest = canSubmitQuizAnswer(selectedOptionId);
 
   async function completeQuest() {
+    if (!canCompleteQuest) {
+      setQuizMessage("Válassz egy választ, mielőtt lezárod a küldetést.");
+      return;
+    }
+
     if (!isCorrectQuizAnswer(quiz, selectedOptionId)) {
       setQuizMessage(quiz.retryText);
       return;
@@ -100,7 +110,10 @@ export default function QuestPlayer({ slug, steps }: Props) {
               <button
                 key={option.id}
                 type="button"
-                onClick={() => setSelectedOptionId(option.id)}
+                onClick={() => {
+                  setSelectedOptionId(option.id);
+                  setQuizMessage(null);
+                }}
                 className={`rounded-lg border p-4 text-left ${
                   selectedOptionId === option.id
                     ? "border-[#1b4332] bg-[#e5f1e8]"
@@ -117,11 +130,16 @@ export default function QuestPlayer({ slug, steps }: Props) {
           <button
             type="button"
             onClick={completeQuest}
-            disabled={loading}
+            disabled={loading || !canCompleteQuest}
             className="mt-5 rounded-lg bg-[#1b4332] px-5 py-3 font-semibold text-white disabled:opacity-60"
           >
             {loading ? "Küldetés lezárása..." : "Küldetés befejezése"}
           </button>
+          {!canCompleteQuest ? (
+            <p className="mt-2 text-xs text-[#7b5f2e]">
+              Válassz egy lehetőséget a befejezéshez.
+            </p>
+          ) : null}
         </>
       )}
     </section>
