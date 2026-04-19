@@ -7,7 +7,7 @@ Status: Approved for implementation planning
 
 The supplied product documents define NatureQuest as a gamified educational adventure platform for Hungarian children aged 10-16. The controlling scope document is `naturequest_build_spec_v1.docx`, which states that it overrides contradictions in earlier documents.
 
-The current application is a Next.js 16.2.4 / React 19.2.4 app with Auth.js credentials auth, Prisma/PostgreSQL, seeded quests, quest listing/detail pages, quest completion, a dashboard shell, and a separate MMI references map module. The NatureQuest gameplay loop is not yet cohesive: the root page is still the default Next.js page, onboarding and character selection are missing, the dashboard is incomplete, the quest detail page is a content view rather than a player, and several Hungarian strings are visibly encoding-damaged.
+The current application is a Next.js 16.2.4 / React 19.2.4 app with Auth.js credentials auth, Prisma/PostgreSQL, seeded quests, quest listing/detail pages, quest completion, and a dashboard shell. The NatureQuest gameplay loop is not yet cohesive: the root page is still the default Next.js page, onboarding and character selection are missing, the dashboard is incomplete, the quest detail page is a content view rather than a player, and several Hungarian strings are visibly encoding-damaged.
 
 This design focuses on the first playable MVP loop:
 
@@ -17,7 +17,7 @@ Register or log in -> complete onboarding -> choose a character class -> see a p
 
 - Give a new user a coherent first-session experience within 2-3 minutes.
 - Align the app with the MVP build spec's core loop without attempting the full platform data model.
-- Keep implementation scoped to the existing app architecture and avoid disrupting the MMI module.
+- Keep implementation scoped to the existing app architecture.
 - Replace affected broken Hungarian UI copy in the touched NatureQuest surfaces.
 - Preserve Next.js 16 route conventions, especially async `params` in dynamic routes and route handlers.
 
@@ -27,7 +27,7 @@ Register or log in -> complete onboarding -> choose a character class -> see a p
 - No GPS quests, social features, parent dashboard, admin content editor, or three-minigame system.
 - No complete visual redesign of every surface.
 - No monetization or email verification workflow.
-- No changes to `/mmi` behavior except incidental build compatibility if required.
+- No unrelated module or project work.
 
 ## Recommended Approach
 
@@ -147,7 +147,7 @@ Run at minimum:
 
 - `corepack pnpm run lint`
 - `corepack pnpm run build`
-- `corepack pnpm run test:mmi`
+- `corepack pnpm run test:naturequest`
 
 Manual verification:
 
@@ -158,11 +158,11 @@ Manual verification:
 - Dashboard shows character state and a recommended quest.
 - User can open the quest player and complete the quest.
 - Reward panel shows points/level and already-completed behavior on repeat completion.
-- Existing MMI tests continue passing.
+- Existing NatureQuest tests continue passing.
 
 ## Implementation Boundaries
 
-Do not rewrite unrelated MMI files.
+Do not rewrite unrelated files.
 Do not refactor the entire visual system.
 Do not introduce a separate backend service.
 Do not stage or commit existing unrelated working tree changes when committing this design document.

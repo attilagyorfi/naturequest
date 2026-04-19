@@ -52,7 +52,6 @@ Then open [http://localhost:3010](http://localhost:3010) and verify:
 
 ```bash
 corepack pnpm run test:naturequest
-corepack pnpm run test:mmi
 corepack pnpm run lint
 corepack pnpm run build
 ```

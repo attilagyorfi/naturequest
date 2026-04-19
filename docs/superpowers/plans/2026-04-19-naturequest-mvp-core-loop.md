@@ -216,7 +216,7 @@ Modify `package.json` scripts:
 "test:naturequest": "tsx --test tests/naturequest/*.test.ts"
 ```
 
-Keep the existing `test:mmi` script unchanged.
+Keep the test scripts focused on NatureQuest.
 
 - [ ] **Step 5: Run the tests to verify they pass**
 
@@ -1363,7 +1363,6 @@ Run:
 
 ```powershell
 corepack pnpm run test:naturequest
-corepack pnpm run test:mmi
 corepack pnpm run lint
 corepack pnpm run build
 ```
@@ -1395,7 +1394,7 @@ Open the dev URL and verify:
 - Wrong quiz answer shows a learning-message, not a punitive error.
 - Correct quiz answer completes the quest and shows reward feedback.
 - Returning to dashboard shows updated completed quest count.
-- `/mmi` route still renders, and `test:mmi` passed.
+- NatureQuest routes render and `test:naturequest` passed.
 
 - [ ] **Step 4: Stop on verification failures**
 
@@ -1407,7 +1406,7 @@ Expected: no source changes in this step when verification passes.
 
 ## Self-Review Notes
 
-- Spec coverage: gateway, onboarding, profile persistence, dashboard, quest catalog cleanup, quest player, reward feedback, auth checks, MMI test protection, and verification are each mapped to tasks.
-- Scope control: no full Character/World/Inventory model, no GPS, no parent dashboard, no admin editor, and no broad MMI rewrite.
+- Spec coverage: gateway, onboarding, profile persistence, dashboard, quest catalog cleanup, quest player, reward feedback, auth checks, and verification are each mapped to tasks.
+- Scope control: no full Character/World/Inventory model, no GPS, no parent dashboard, no admin editor, and no unrelated project rewrite.
 - Type consistency: `characterName`, `characterClass`, `avatarPreset`, and `onboardingCompletedAt` are used consistently across schema, helper, API, page, and dashboard tasks.
 - Next.js 16 compatibility: dynamic route `params` stay awaited in existing routes; new routes avoid sync params.
