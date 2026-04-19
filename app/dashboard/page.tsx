@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { selectRecommendedQuest } from "@/lib/dashboard";
 import { getCharacterClass, isOnboardingComplete } from "@/lib/onboarding";
+import { calculateAdventureProgress } from "@/lib/progress";
 import SignOutButton from "@/components/sign-out-button";
 
 export const dynamic = "force-dynamic";
@@ -15,29 +16,36 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email },
-    include: {
-      profile: true,
-      userBadges: {
-        include: { badge: true },
-        orderBy: { awardedAt: "desc" },
-      },
-      questProgress: {
-        where: { status: "COMPLETED" },
-        include: {
-          quest: {
-            include: { category: true },
-          },
+  const [user, quests] = await Promise.all([
+    prisma.user.findUnique({
+      where: { email: session.user.email },
+      include: {
+        profile: true,
+        userBadges: {
+          include: { badge: true },
+          orderBy: { awardedAt: "desc" },
         },
-        orderBy: { completedAt: "desc" },
+        questProgress: {
+          where: { status: "COMPLETED" },
+          include: {
+            quest: {
+              include: { category: true },
+            },
+          },
+          orderBy: { completedAt: "desc" },
+        },
+        achievements: {
+          orderBy: { createdAt: "desc" },
+          take: 5,
+        },
       },
-      achievements: {
-        orderBy: { createdAt: "desc" },
-        take: 5,
-      },
-    },
-  });
+    }),
+    prisma.quest.findMany({
+      where: { status: "PUBLISHED" },
+      include: { category: true },
+      orderBy: [{ createdAt: "asc" }],
+    }),
+  ]);
 
   if (!user) {
     redirect("/login");
@@ -47,17 +55,17 @@ export default async function DashboardPage() {
     redirect("/onboarding");
   }
 
-  const quests = await prisma.quest.findMany({
-    where: { status: "PUBLISHED" },
-    include: { category: true },
-    orderBy: [{ createdAt: "asc" }],
-  });
-
   const completedQuestIds = new Set(
     user.questProgress.map((item) => item.questId)
   );
   const recommendedQuest = selectRecommendedQuest(quests, completedQuestIds);
   const characterClass = getCharacterClass(user.profile?.characterClass);
+  const progress = calculateAdventureProgress({
+    totalQuests: quests.length,
+    completedQuests: completedQuestIds.size,
+    points: user.points,
+    level: user.level,
+  });
 
   return (
     <main className="min-h-screen bg-[#f6f0e4] px-6 py-10 text-[#193226]">
@@ -82,7 +90,7 @@ export default async function DashboardPage() {
           <div className="rounded-lg border border-[#d9c8a4] bg-white p-5">
             <p className="text-sm text-[#52645c]">Teljesített küldetések</p>
             <p className="mt-2 text-3xl font-bold">
-              {user.questProgress.length}
+              {progress.completedQuests}/{progress.totalQuests}
             </p>
           </div>
           <div className="rounded-lg border border-[#d9c8a4] bg-white p-5">
@@ -90,11 +98,36 @@ export default async function DashboardPage() {
             <p className="mt-2 text-3xl font-bold">{user.userBadges.length}</p>
           </div>
           <div className="rounded-lg border border-[#d9c8a4] bg-white p-5">
-            <p className="text-sm text-[#52645c]">Következő cél</p>
+            <p className="text-sm text-[#52645c]">Következő szintig</p>
             <p className="mt-2 text-3xl font-bold">
-              {recommendedQuest ? "+XP" : "Pihenő"}
+              {progress.xpUntilNextLevel} XP
             </p>
           </div>
+        </section>
+
+        <section className="mt-8 rounded-lg border border-[#d9c8a4] bg-white p-6">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#7b5f2e]">
+                Kaland előrehaladás
+              </p>
+              <h2 className="mt-2 text-2xl font-bold">
+                {progress.completionPercent}% bejárva
+              </h2>
+            </div>
+            <p className="text-sm text-[#52645c]">
+              {progress.remainingQuests} küldetés vár még rád
+            </p>
+          </div>
+          <div className="mt-5 h-3 overflow-hidden rounded bg-[#eadfca]">
+            <div
+              className="h-full rounded bg-[#1b4332]"
+              style={{ width: `${progress.completionPercent}%` }}
+            />
+          </div>
+          <p className="mt-3 text-sm text-[#52645c]">
+            Következő szint célja: {progress.nextLevelTarget} XP.
+          </p>
         </section>
 
         <section className="mt-8 rounded-lg border border-[#d9c8a4] bg-white p-6">
@@ -108,6 +141,9 @@ export default async function DashboardPage() {
               </h2>
               <p className="mt-3 max-w-2xl text-[#52645c]">
                 {recommendedQuest.shortDescription}
+              </p>
+              <p className="mt-3 text-sm font-semibold text-[#1b4332]">
+                Jutalom: +{recommendedQuest.pointsReward} XP
               </p>
               <Link
                 href={`/quests/${recommendedQuest.slug}`}
@@ -129,15 +165,15 @@ export default async function DashboardPage() {
             <h2 className="text-xl font-bold">Legutóbbi teljesítések</h2>
             {user.questProgress.length > 0 ? (
               <ul className="mt-4 space-y-3">
-                {user.questProgress.slice(0, 4).map((progress) => (
+                {user.questProgress.slice(0, 4).map((progressItem) => (
                   <li
-                    key={progress.id}
+                    key={progressItem.id}
                     className="rounded-lg bg-[#fffaf0] px-4 py-3"
                   >
-                    <p className="font-semibold">{progress.quest.title}</p>
+                    <p className="font-semibold">{progressItem.quest.title}</p>
                     <p className="text-sm text-[#52645c]">
-                      {progress.quest.category.name} | +{progress.earnedPoints}{" "}
-                      XP
+                      {progressItem.quest.category.name} | +
+                      {progressItem.earnedPoints} XP
                     </p>
                   </li>
                 ))}
