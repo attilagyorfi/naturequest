@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { formatAchievementEntry } from "@/lib/chronicle";
 import { selectRecommendedQuest } from "@/lib/dashboard";
 import { getCharacterClass, isOnboardingComplete } from "@/lib/onboarding";
 import { calculateAdventureProgress } from "@/lib/progress";
@@ -66,6 +67,11 @@ export default async function DashboardPage() {
     points: user.points,
     level: user.level,
   });
+  const chronicleEntries = user.achievements.map((achievement) => ({
+    id: achievement.id,
+    createdAt: achievement.createdAt,
+    ...formatAchievementEntry(achievement),
+  }));
 
   return (
     <main className="min-h-screen bg-[#f6f0e4] px-6 py-10 text-[#193226]">
@@ -187,19 +193,24 @@ export default async function DashboardPage() {
 
           <div className="rounded-lg border border-[#d9c8a4] bg-white p-6">
             <h2 className="text-xl font-bold">Friss krónika</h2>
-            {user.achievements.length > 0 ? (
+            {chronicleEntries.length > 0 ? (
               <ul className="mt-4 space-y-3">
-                {user.achievements.map((achievement) => (
+                {chronicleEntries.map((entry) => (
                   <li
-                    key={achievement.id}
+                    key={entry.id}
                     className="rounded-lg bg-[#fffaf0] px-4 py-3"
                   >
-                    <p className="font-semibold">{achievement.action}</p>
-                    {achievement.note ? (
-                      <p className="text-sm text-[#52645c]">
-                        {achievement.note}
-                      </p>
-                    ) : null}
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <p className="font-semibold">{entry.title}</p>
+                      {entry.pointsLabel ? (
+                        <span className="rounded-full bg-[#e5f1e8] px-3 py-1 text-xs font-semibold text-[#1b4332]">
+                          {entry.pointsLabel}
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="mt-1 text-sm text-[#52645c]">
+                      {entry.detail}
+                    </p>
                   </li>
                 ))}
               </ul>
