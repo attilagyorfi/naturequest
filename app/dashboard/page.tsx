@@ -1,12 +1,19 @@
+import { existsSync, readdirSync } from "node:fs";
+import path from "node:path";
+import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
-import { formatAchievementEntry } from "@/lib/chronicle";
-import { selectRecommendedQuest } from "@/lib/dashboard";
-import { getCharacterClass, isOnboardingComplete } from "@/lib/onboarding";
-import { calculateAdventureProgress } from "@/lib/progress";
 import SignOutButton from "@/components/sign-out-button";
+import { formatAchievementEntry } from "@/lib/chronicle";
+import {
+  describeRecommendedQuestReason,
+  selectRecommendedQuest,
+} from "@/lib/dashboard";
+import { getCharacterClass, isOnboardingComplete } from "@/lib/onboarding";
+import { prisma } from "@/lib/prisma";
+import { calculateAdventureProgress } from "@/lib/progress";
+import { resolveLocalAssetPath } from "@/lib/quest-detail";
 
 export const dynamic = "force-dynamic";
 
@@ -43,7 +50,7 @@ export default async function DashboardPage() {
     }),
     prisma.quest.findMany({
       where: { status: "PUBLISHED" },
-      include: { category: true },
+      include: { category: true, audioGuides: true },
       orderBy: [{ createdAt: "asc" }],
     }),
   ]);
@@ -59,7 +66,15 @@ export default async function DashboardPage() {
   const completedQuestIds = new Set(
     user.questProgress.map((item) => item.questId)
   );
-  const recommendedQuest = selectRecommendedQuest(quests, completedQuestIds);
+  const recommendedQuest = selectRecommendedQuest(
+    quests,
+    completedQuestIds,
+    user.questProgress
+  );
+  const recommendedQuestReason = describeRecommendedQuestReason(
+    recommendedQuest,
+    user.questProgress
+  );
   const characterClass = getCharacterClass(user.profile?.characterClass);
   const progress = calculateAdventureProgress({
     totalQuests: quests.length,
@@ -72,6 +87,18 @@ export default async function DashboardPage() {
     createdAt: achievement.createdAt,
     ...formatAchievementEntry(achievement),
   }));
+  const questAssetDirectory = path.join(process.cwd(), "public", "quests");
+  const questAssets = existsSync(questAssetDirectory)
+    ? new Set(
+        readdirSync(questAssetDirectory).map((fileName) => `/quests/${fileName}`)
+      )
+    : new Set<string>();
+  const recommendedQuestCover = recommendedQuest
+    ? resolveLocalAssetPath(
+        recommendedQuest.coverImageUrl ?? `/quests/${recommendedQuest.slug}.png`,
+        questAssets
+      )
+    : null;
 
   return (
     <main className="min-h-screen bg-[#f6f0e4] px-6 py-10 text-[#193226]">
@@ -79,13 +106,13 @@ export default async function DashboardPage() {
         <header className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#7b5f2e]">
-              Hőstábla
+              Hostabla
             </p>
             <h1 className="mt-2 text-4xl font-bold tracking-tight">
               {user.profile?.characterName}
             </h1>
             <p className="mt-2 text-[#52645c]">
-              {characterClass?.label ?? "Hős"} | {user.level}. szint |{" "}
+              {characterClass?.label ?? "Hos"} | {user.level}. szint |{" "}
               {user.points} XP
             </p>
           </div>
@@ -94,7 +121,7 @@ export default async function DashboardPage() {
 
         <section className="mt-8 grid gap-4 md:grid-cols-3">
           <div className="rounded-lg border border-[#d9c8a4] bg-white p-5">
-            <p className="text-sm text-[#52645c]">Teljesített küldetések</p>
+            <p className="text-sm text-[#52645c]">Teljesitett kuldetesek</p>
             <p className="mt-2 text-3xl font-bold">
               {progress.completedQuests}/{progress.totalQuests}
             </p>
@@ -104,7 +131,7 @@ export default async function DashboardPage() {
             <p className="mt-2 text-3xl font-bold">{user.userBadges.length}</p>
           </div>
           <div className="rounded-lg border border-[#d9c8a4] bg-white p-5">
-            <p className="text-sm text-[#52645c]">Következő szintig</p>
+            <p className="text-sm text-[#52645c]">Kovetkezo szintig</p>
             <p className="mt-2 text-3xl font-bold">
               {progress.xpUntilNextLevel} XP
             </p>
@@ -115,14 +142,14 @@ export default async function DashboardPage() {
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#7b5f2e]">
-                Kaland előrehaladás
+                Kaland elorehaladas
               </p>
               <h2 className="mt-2 text-2xl font-bold">
-                {progress.completionPercent}% bejárva
+                {progress.completionPercent}% bejarva
               </h2>
             </div>
             <p className="text-sm text-[#52645c]">
-              {progress.remainingQuests} küldetés vár még rád
+              {progress.remainingQuests} kuldetes var meg rad
             </p>
           </div>
           <div className="mt-5 h-3 overflow-hidden rounded bg-[#eadfca]">
@@ -132,43 +159,114 @@ export default async function DashboardPage() {
             />
           </div>
           <p className="mt-3 text-sm text-[#52645c]">
-            Következő szint célja: {progress.nextLevelTarget} XP.
+            Kovetkezo szint celja: {progress.nextLevelTarget} XP.
           </p>
         </section>
 
-        <section className="mt-8 rounded-lg border border-[#d9c8a4] bg-white p-6">
-          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#7b5f2e]">
-            Ajánlott ösvény
-          </p>
-          {recommendedQuest ? (
-            <>
-              <h2 className="mt-3 text-3xl font-bold">
-                {recommendedQuest.title}
-              </h2>
-              <p className="mt-3 max-w-2xl text-[#52645c]">
-                {recommendedQuest.shortDescription}
-              </p>
-              <p className="mt-3 text-sm font-semibold text-[#1b4332]">
-                Jutalom: +{recommendedQuest.pointsReward} XP
-              </p>
-              <Link
-                href={`/quests/${recommendedQuest.slug}`}
-                className="mt-5 inline-flex rounded-lg bg-[#1b4332] px-5 py-3 font-semibold text-white"
-              >
-                Folytasd a kalandot
-              </Link>
-            </>
+        <section className="mt-8 overflow-hidden rounded-lg border border-[#d9c8a4] bg-white">
+          {recommendedQuest && recommendedQuestCover ? (
+            <div className="grid lg:grid-cols-[1.15fr_1fr]">
+              <div className="relative min-h-[280px] bg-[#d7e7d7]">
+                <Image
+                  src={recommendedQuestCover}
+                  alt={`${recommendedQuest.title} ajanlott kuldetes boritokepe`}
+                  fill
+                  preload
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  className="object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#193226]/70 via-[#193226]/20 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 p-6">
+                  <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#f6f0e4]">
+                    Mai kaland
+                  </p>
+                  <h2 className="mt-2 text-3xl font-bold text-white">
+                    {recommendedQuest.title}
+                  </h2>
+                </div>
+              </div>
+
+              <div className="p-6">
+                <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#7b5f2e]">
+                  Ajanlott osveny
+                </p>
+                <p className="mt-3 text-lg text-[#52645c]">
+                  {recommendedQuest.shortDescription}
+                </p>
+                <p className="mt-4 text-sm font-semibold text-[#1b4332]">
+                  {recommendedQuestReason}
+                </p>
+
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-lg bg-[#fffaf0] px-4 py-3">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#7b5f2e]">
+                      Jutalom
+                    </p>
+                    <p className="mt-1 text-xl font-bold">
+                      +{recommendedQuest.pointsReward} XP
+                    </p>
+                  </div>
+
+                  <div className="rounded-lg bg-[#fffaf0] px-4 py-3">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#7b5f2e]">
+                      Becsult ido
+                    </p>
+                    <p className="mt-1 text-xl font-bold">
+                      {recommendedQuest.estimatedMinutes ?? "?"} perc
+                    </p>
+                  </div>
+
+                  <div className="rounded-lg bg-[#fffaf0] px-4 py-3">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#7b5f2e]">
+                      Temakor
+                    </p>
+                    <p className="mt-1 text-xl font-bold">
+                      {recommendedQuest.category.name}
+                    </p>
+                  </div>
+
+                  <div className="rounded-lg bg-[#fffaf0] px-4 py-3">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#7b5f2e]">
+                      Hanganyag
+                    </p>
+                    <p className="mt-1 text-xl font-bold">
+                      {recommendedQuest.audioGuides.length} db
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <Link
+                    href={`/quests/${recommendedQuest.slug}`}
+                    className="inline-flex rounded-lg bg-[#1b4332] px-5 py-3 font-semibold text-white"
+                  >
+                    Kaland inditasa
+                  </Link>
+                  <Link
+                    href="/quests"
+                    className="inline-flex rounded-lg border border-[#d9c8a4] bg-white px-5 py-3 font-semibold text-[#193226]"
+                  >
+                    Osszes kuldetes
+                  </Link>
+                </div>
+              </div>
+            </div>
           ) : (
-            <p className="mt-3 text-[#52645c]">
-              A Krónikások most készítik a következő ösvényt. Nézz vissza
-              hamarosan.
-            </p>
+            <div className="p-6">
+              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#7b5f2e]">
+                Ajanlott osveny
+              </p>
+              <p className="mt-3 text-[#52645c]">
+                A Kronikasok most keszitik a kovetkezo osvenyt. Nezz vissza
+                hamarosan.
+              </p>
+            </div>
           )}
         </section>
 
         <section className="mt-8 grid gap-4 lg:grid-cols-2">
           <div className="rounded-lg border border-[#d9c8a4] bg-white p-6">
-            <h2 className="text-xl font-bold">Legutóbbi teljesítések</h2>
+            <h2 className="text-xl font-bold">Legutobbi teljesitesek</h2>
             {user.questProgress.length > 0 ? (
               <ul className="mt-4 space-y-3">
                 {user.questProgress.slice(0, 4).map((progressItem) => (
@@ -186,13 +284,13 @@ export default async function DashboardPage() {
               </ul>
             ) : (
               <p className="mt-4 text-[#52645c]">
-                Az első küldetés után itt jelennek meg a hőstetteid.
+                Az elso kuldetes utan itt jelennek meg a hostetteid.
               </p>
             )}
           </div>
 
           <div className="rounded-lg border border-[#d9c8a4] bg-white p-6">
-            <h2 className="text-xl font-bold">Friss krónika</h2>
+            <h2 className="text-xl font-bold">Friss kronika</h2>
             {chronicleEntries.length > 0 ? (
               <ul className="mt-4 space-y-3">
                 {chronicleEntries.map((entry) => (
@@ -216,7 +314,7 @@ export default async function DashboardPage() {
               </ul>
             ) : (
               <p className="mt-4 text-[#52645c]">
-                A krónika az első kalandod után kezd íródni.
+                A kronika az elso kalandod utan kezd irodni.
               </p>
             )}
           </div>
