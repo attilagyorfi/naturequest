@@ -2,11 +2,18 @@ import { existsSync, readdirSync } from "node:fs";
 import path from "node:path";
 import Image from "next/image";
 import { notFound } from "next/navigation";
+import { auth } from "@/auth";
+import AiFieldBrief from "@/components/ai-field-brief";
 import QuestPlayer from "@/components/quest-player";
 import {
   formatDurationLabel,
   resolveLocalAssetPath,
 } from "@/lib/quest-detail";
+import {
+  buildGoogleMapsEmbedUrl,
+  buildGoogleMapsSearchUrl,
+  buildQuestMapQuery,
+} from "@/lib/maps";
 import { prisma } from "@/lib/prisma";
 
 type PageProps = {
@@ -19,6 +26,7 @@ export const dynamic = "force-dynamic";
 
 export default async function QuestDetailPage({ params }: PageProps) {
   const { slug } = await params;
+  const session = await auth();
 
   const quest = await prisma.quest.findUnique({
     where: {
@@ -58,6 +66,13 @@ export default async function QuestDetailPage({ params }: PageProps) {
     ),
   }));
 
+  const mapQuery = buildQuestMapQuery(quest.title, quest.locationHint);
+  const mapEmbedUrl = buildGoogleMapsEmbedUrl(
+    mapQuery,
+    process.env.GOOGLE_MAPS_API_KEY
+  );
+  const mapsSearchUrl = buildGoogleMapsSearchUrl(mapQuery);
+
   return (
     <main className="min-h-screen bg-[#f6f0e4] px-6 py-10 text-[#193226]">
       <div className="mx-auto max-w-5xl">
@@ -65,7 +80,7 @@ export default async function QuestDetailPage({ params }: PageProps) {
           <div className="relative min-h-[280px] bg-[#d7e7d7] sm:min-h-[360px]">
             <Image
               src={coverImageUrl}
-              alt={`${quest.title} küldetés borítóképe`}
+              alt={`${quest.title} kuldetes boritokepe`}
               fill
               preload
               sizes="(max-width: 768px) 100vw, 960px"
@@ -95,25 +110,25 @@ export default async function QuestDetailPage({ params }: PageProps) {
           </div>
 
           <div className="rounded-lg border border-[#d9c8a4] bg-white p-5">
-            <p className="text-sm font-semibold text-[#7b5f2e]">Nehézség</p>
+            <p className="text-sm font-semibold text-[#7b5f2e]">Nehezseg</p>
             <p className="mt-2 text-2xl font-bold">{quest.difficulty}</p>
           </div>
 
           <div className="rounded-lg border border-[#d9c8a4] bg-white p-5">
-            <p className="text-sm font-semibold text-[#7b5f2e]">Becsült idő</p>
+            <p className="text-sm font-semibold text-[#7b5f2e]">Becsult ido</p>
             <p className="mt-2 text-2xl font-bold">
               {quest.estimatedMinutes ?? "?"} perc
             </p>
           </div>
 
           <div className="rounded-lg border border-[#d9c8a4] bg-white p-5">
-            <p className="text-sm font-semibold text-[#7b5f2e]">Lépések</p>
+            <p className="text-sm font-semibold text-[#7b5f2e]">Lepesek</p>
             <p className="mt-2 text-2xl font-bold">{quest.steps.length}</p>
           </div>
         </section>
 
         <section className="mb-8 rounded-lg border border-[#d9c8a4] bg-white p-6">
-          <h2 className="text-2xl font-semibold">Küldetés leírása</h2>
+          <h2 className="text-2xl font-semibold">Kuldetes leirasa</h2>
 
           <p className="mt-4 whitespace-pre-line text-[#52645c]">
             {quest.description}
@@ -122,39 +137,89 @@ export default async function QuestDetailPage({ params }: PageProps) {
 
         <section className="mb-8 grid gap-4 lg:grid-cols-[1.4fr_1fr]">
           <div className="rounded-lg border border-[#d9c8a4] bg-white p-6">
-            <h2 className="text-2xl font-semibold">Mire figyelj indulás előtt?</h2>
+            <h2 className="text-2xl font-semibold">Mire figyelj indulas elott?</h2>
 
             <ul className="mt-4 space-y-3 text-[#52645c]">
-              <li>Szánj rá nyugodtan ennyi időt: {quest.estimatedMinutes ?? "?"} perc.</li>
               <li>
-                A helyszín tipp segít a ráhangolódásban:{" "}
-                {quest.locationHint ?? "nincs külön megadva"}.
+                Szanj ra nyugodtan ennyi idot: {quest.estimatedMinutes ?? "?"}{" "}
+                perc.
               </li>
               <li>
-                Hallgasd meg az útmutatót, és csak utána indulj neki a
-                lépéseknek.
+                A helyszin tipp segit a rahangolodasban:{" "}
+                {quest.locationHint ?? "nincs kulon megadva"}.
+              </li>
+              <li>
+                Hallgasd meg az utmutatot, es csak utana indulj neki a
+                lepeseknek.
               </li>
             </ul>
           </div>
 
           <div className="rounded-lg border border-[#d9c8a4] bg-[#fcf8ef] p-6">
-            <h2 className="text-2xl font-semibold">Mit vigyél magaddal?</h2>
+            <h2 className="text-2xl font-semibold">Mit vigyel magaddal?</h2>
 
             <ul className="mt-4 space-y-3 text-[#52645c]">
-              <li>Nyitott figyelmet és egy kis kíváncsiságot.</li>
-              <li>Telefont vagy jegyzetelési lehetőséget a megfigyelésekhez.</li>
-              <li>Kényelmes tempót, mert itt nem a sietség számít.</li>
+              <li>Nyitott figyelmet es egy kis kivancsisagot.</li>
+              <li>Telefont vagy jegyzetelesi lehetoseget a megfigyelesekhez.</li>
+              <li>Kenyelmes tempot, mert itt nem a sietseg szamit.</li>
             </ul>
           </div>
         </section>
 
+        <section className="mb-8 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+          <div className="overflow-hidden rounded-lg border border-[#d9c8a4] bg-white">
+            <div className="p-6">
+              <p className="text-sm font-semibold uppercase tracking-[0.14em] text-[#7b5f2e]">
+                Helyszin
+              </p>
+              <h2 className="mt-2 text-2xl font-semibold">Google Maps nezet</h2>
+              <p className="mt-3 text-[#52645c]">
+                Nezd meg a kuldeteshez illo helyszint, es nyisd meg kulon
+                terkepen, ha ott szeretnel indulni.
+              </p>
+            </div>
+
+            {mapEmbedUrl ? (
+              <iframe
+                title={`${quest.title} Google Maps helyszin`}
+                src={mapEmbedUrl}
+                className="h-[320px] w-full border-0"
+                loading="lazy"
+                allowFullScreen
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            ) : (
+              <div className="px-6 pb-6 text-sm text-[#52645c]">
+                A terkep most nem erheto el, de a helyszintipp mar segit az
+                indulashoz.
+              </div>
+            )}
+
+            <div className="p-6 pt-4">
+              <a
+                href={mapsSearchUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex rounded-lg bg-[#1b4332] px-4 py-3 font-semibold text-white"
+              >
+                Megnyitas Google Mapsben
+              </a>
+            </div>
+          </div>
+
+          <AiFieldBrief
+            slug={quest.slug}
+            canUseAiBrief={Boolean(session?.user?.email)}
+          />
+        </section>
+
         {audioGuides.length > 0 ? (
           <section className="mb-8 rounded-lg border border-[#d9c8a4] bg-[#fcf8ef] p-6">
-            <h2 className="text-2xl font-semibold">Felkészülés</h2>
+            <h2 className="text-2xl font-semibold">Felkeszules</h2>
 
             <p className="mt-3 text-[#52645c]">
-              Indulás előtt érdemes átfutni a rövid útmutatót, hogy könnyebben
-              ráhangolódj a küldetésre.
+              Indulas elott erdemes atfutni a rovid utmutatot, hogy
+              konnyebben rahangolodj a kuldetesre.
             </p>
 
             <div className="mt-5 grid gap-4">
@@ -186,12 +251,12 @@ export default async function QuestDetailPage({ params }: PageProps) {
                       className="mt-4 w-full"
                       src={guide.audioUrl}
                     >
-                      A böngésződ nem támogatja a hanganyag lejátszását.
+                      A bongeszod nem tamogatja a hanganyag lejatszasat.
                     </audio>
                   ) : (
                     <p className="mt-4 text-sm text-[#7b5f2e]">
-                      A hanganyag rövidesen elérhető lesz, addig az átiratból
-                      tudsz készülni.
+                      A hanganyag rovidesen elerheto lesz, addig az atiratbol
+                      tudsz keszulni.
                     </p>
                   )}
                 </article>
