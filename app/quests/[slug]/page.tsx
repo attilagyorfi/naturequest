@@ -1,8 +1,12 @@
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import path from "node:path";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import QuestPlayer from "@/components/quest-player";
-import { formatDurationLabel } from "@/lib/quest-detail";
+import {
+  formatDurationLabel,
+  resolveLocalAssetPath,
+} from "@/lib/quest-detail";
 import { prisma } from "@/lib/prisma";
 
 type PageProps = {
@@ -35,6 +39,18 @@ export default async function QuestDetailPage({ params }: PageProps) {
     notFound();
   }
 
+  const questAssetDirectory = path.join(process.cwd(), "public", "quests");
+  const questAssets = existsSync(questAssetDirectory)
+    ? new Set(
+        readdirSync(questAssetDirectory).map((fileName) => `/quests/${fileName}`)
+      )
+    : new Set<string>();
+
+  const coverImageUrl = resolveLocalAssetPath(
+    quest.coverImageUrl ?? `/quests/${quest.slug}.png`,
+    questAssets
+  );
+
   const audioGuides = quest.audioGuides.map((guide) => ({
     ...guide,
     hasAudioFile: existsSync(
@@ -44,20 +60,57 @@ export default async function QuestDetailPage({ params }: PageProps) {
 
   return (
     <main className="min-h-screen bg-[#f6f0e4] px-6 py-10 text-[#193226]">
-      <div className="mx-auto max-w-4xl">
-        <div className="mb-8">
-          <span className="rounded-full bg-[#e5f1e8] px-3 py-1 text-sm font-medium text-[#1b4332]">
-            {quest.category.name}
-          </span>
+      <div className="mx-auto max-w-5xl">
+        <section className="mb-8 overflow-hidden rounded-lg border border-[#d9c8a4] bg-white">
+          <div className="relative min-h-[280px] bg-[#d7e7d7] sm:min-h-[360px]">
+            <Image
+              src={coverImageUrl}
+              alt={`${quest.title} küldetés borítóképe`}
+              fill
+              preload
+              sizes="(max-width: 768px) 100vw, 960px"
+              className="object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#193226]/80 via-[#193226]/35 to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8">
+              <span className="rounded-full bg-[#e5f1e8] px-3 py-1 text-sm font-medium text-[#1b4332]">
+                {quest.category.name}
+              </span>
 
-          <h1 className="mt-4 text-4xl font-bold tracking-tight">
-            {quest.title}
-          </h1>
+              <h1 className="mt-4 max-w-3xl text-4xl font-bold tracking-tight text-white sm:text-5xl">
+                {quest.title}
+              </h1>
 
-          <p className="mt-4 text-lg text-[#52645c]">
-            {quest.shortDescription}
-          </p>
-        </div>
+              <p className="mt-4 max-w-2xl text-base text-[#f6f0e4] sm:text-lg">
+                {quest.shortDescription}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="mb-8 grid gap-4 md:grid-cols-4">
+          <div className="rounded-lg border border-[#d9c8a4] bg-white p-5">
+            <p className="text-sm font-semibold text-[#7b5f2e]">Pontjutalom</p>
+            <p className="mt-2 text-2xl font-bold">{quest.pointsReward} XP</p>
+          </div>
+
+          <div className="rounded-lg border border-[#d9c8a4] bg-white p-5">
+            <p className="text-sm font-semibold text-[#7b5f2e]">Nehézség</p>
+            <p className="mt-2 text-2xl font-bold">{quest.difficulty}</p>
+          </div>
+
+          <div className="rounded-lg border border-[#d9c8a4] bg-white p-5">
+            <p className="text-sm font-semibold text-[#7b5f2e]">Becsült idő</p>
+            <p className="mt-2 text-2xl font-bold">
+              {quest.estimatedMinutes ?? "?"} perc
+            </p>
+          </div>
+
+          <div className="rounded-lg border border-[#d9c8a4] bg-white p-5">
+            <p className="text-sm font-semibold text-[#7b5f2e]">Lépések</p>
+            <p className="mt-2 text-2xl font-bold">{quest.steps.length}</p>
+          </div>
+        </section>
 
         <section className="mb-8 rounded-lg border border-[#d9c8a4] bg-white p-6">
           <h2 className="text-2xl font-semibold">Küldetés leírása</h2>
@@ -67,26 +120,31 @@ export default async function QuestDetailPage({ params }: PageProps) {
           </p>
         </section>
 
-        <section className="mb-8 rounded-lg border border-[#d9c8a4] bg-white p-6">
-          <h2 className="text-2xl font-semibold">Részletek</h2>
+        <section className="mb-8 grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+          <div className="rounded-lg border border-[#d9c8a4] bg-white p-6">
+            <h2 className="text-2xl font-semibold">Mire figyelj indulás előtt?</h2>
 
-          <div className="mt-4 grid gap-3 text-[#52645c] sm:grid-cols-2">
-            <p>
-              <strong>Pontjutalom:</strong> {quest.pointsReward}
-            </p>
+            <ul className="mt-4 space-y-3 text-[#52645c]">
+              <li>Szánj rá nyugodtan ennyi időt: {quest.estimatedMinutes ?? "?"} perc.</li>
+              <li>
+                A helyszín tipp segít a ráhangolódásban:{" "}
+                {quest.locationHint ?? "nincs külön megadva"}.
+              </li>
+              <li>
+                Hallgasd meg az útmutatót, és csak utána indulj neki a
+                lépéseknek.
+              </li>
+            </ul>
+          </div>
 
-            <p>
-              <strong>Nehézség:</strong> {quest.difficulty}
-            </p>
+          <div className="rounded-lg border border-[#d9c8a4] bg-[#fcf8ef] p-6">
+            <h2 className="text-2xl font-semibold">Mit vigyél magaddal?</h2>
 
-            <p>
-              <strong>Becsült idő:</strong> {quest.estimatedMinutes ?? "?"} perc
-            </p>
-
-            <p>
-              <strong>Helyszín tipp:</strong>{" "}
-              {quest.locationHint ?? "Nincs megadva"}
-            </p>
+            <ul className="mt-4 space-y-3 text-[#52645c]">
+              <li>Nyitott figyelmet és egy kis kíváncsiságot.</li>
+              <li>Telefont vagy jegyzetelési lehetőséget a megfigyelésekhez.</li>
+              <li>Kényelmes tempót, mert itt nem a sietség számít.</li>
+            </ul>
           </div>
         </section>
 

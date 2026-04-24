@@ -1,6 +1,10 @@
+import { existsSync, readdirSync } from "node:fs";
+import path from "node:path";
+import Image from "next/image";
 import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { resolveLocalAssetPath } from "@/lib/quest-detail";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +51,13 @@ export default async function QuestsPage() {
     user?.questProgress.map((item) => item.questId) ?? []
   );
 
+  const questAssetDirectory = path.join(process.cwd(), "public", "quests");
+  const questAssets = existsSync(questAssetDirectory)
+    ? new Set(
+        readdirSync(questAssetDirectory).map((fileName) => `/quests/${fileName}`)
+      )
+    : new Set<string>();
+
   return (
     <main className="min-h-screen bg-[#f6f0e4] px-6 py-10 text-[#193226]">
       <div className="mx-auto max-w-6xl">
@@ -88,70 +99,86 @@ export default async function QuestsPage() {
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             {quests.map((quest) => {
               const completed = completedQuestIds.has(quest.id);
+              const coverImageUrl = resolveLocalAssetPath(
+                quest.coverImageUrl ?? `/quests/${quest.slug}.png`,
+                questAssets
+              );
 
               return (
                 <article
                   key={quest.id}
-                  className="rounded-lg border border-[#d9c8a4] bg-white p-6 shadow-sm transition hover:shadow-md"
+                  className="overflow-hidden rounded-lg border border-[#d9c8a4] bg-white shadow-sm transition hover:shadow-md"
                 >
-                  <div className="mb-4 flex items-center justify-between gap-3">
-                    <span className="rounded-full bg-[#e5f1e8] px-3 py-1 text-sm font-medium text-[#1b4332]">
-                      {quest.category.name}
-                    </span>
-
-                    <span
-                      className={`rounded-full px-3 py-1 text-sm font-semibold ${
-                        completed
-                          ? "bg-[#fff0c9] text-[#7b5f2e]"
-                          : "bg-[#eef3f4] text-[#52645c]"
-                      }`}
-                    >
-                      {completed ? "Teljesítve" : "Még hátra van"}
-                    </span>
+                  <div className="relative aspect-[16/10] bg-[#d7e7d7]">
+                    <Image
+                      src={coverImageUrl}
+                      alt={`${quest.title} küldetés borítóképe`}
+                      fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                      className="object-cover"
+                    />
                   </div>
 
-                  <h2 className="text-2xl font-semibold">{quest.title}</h2>
+                  <div className="p-6">
+                    <div className="mb-4 flex items-center justify-between gap-3">
+                      <span className="rounded-full bg-[#e5f1e8] px-3 py-1 text-sm font-medium text-[#1b4332]">
+                        {quest.category.name}
+                      </span>
 
-                  <p className="mt-3 text-[#52645c]">
-                    {quest.shortDescription}
-                  </p>
+                      <span
+                        className={`rounded-full px-3 py-1 text-sm font-semibold ${
+                          completed
+                            ? "bg-[#fff0c9] text-[#7b5f2e]"
+                            : "bg-[#eef3f4] text-[#52645c]"
+                        }`}
+                      >
+                        {completed ? "Teljesítve" : "Még hátra van"}
+                      </span>
+                    </div>
 
-                  <div className="mt-5 space-y-2 text-sm text-[#52645c]">
-                    <p>
-                      <strong>Pontjutalom:</strong> {quest.pointsReward} XP
+                    <h2 className="text-2xl font-semibold">{quest.title}</h2>
+
+                    <p className="mt-3 text-[#52645c]">
+                      {quest.shortDescription}
                     </p>
 
-                    <p>
-                      <strong>Nehézség:</strong> {quest.difficulty}
-                    </p>
-
-                    <p>
-                      <strong>Becsült idő:</strong>{" "}
-                      {quest.estimatedMinutes ?? "?"} perc
-                    </p>
-
-                    <p>
-                      <strong>Lépések száma:</strong> {quest.steps.length}
-                    </p>
-
-                    <p>
-                      <strong>Hanganyagok:</strong> {quest.audioGuides.length}
-                    </p>
-
-                    {quest.locationHint ? (
+                    <div className="mt-5 space-y-2 text-sm text-[#52645c]">
                       <p>
-                        <strong>Helyszín tipp:</strong> {quest.locationHint}
+                        <strong>Pontjutalom:</strong> {quest.pointsReward} XP
                       </p>
-                    ) : null}
-                  </div>
 
-                  <div className="mt-6">
-                    <Link
-                      href={`/quests/${quest.slug}`}
-                      className="inline-flex rounded-lg bg-[#193226] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#255f46]"
-                    >
-                      {completed ? "Újrajátszás" : "Küldetés megnyitása"}
-                    </Link>
+                      <p>
+                        <strong>Nehézség:</strong> {quest.difficulty}
+                      </p>
+
+                      <p>
+                        <strong>Becsült idő:</strong>{" "}
+                        {quest.estimatedMinutes ?? "?"} perc
+                      </p>
+
+                      <p>
+                        <strong>Lépések száma:</strong> {quest.steps.length}
+                      </p>
+
+                      <p>
+                        <strong>Hanganyagok:</strong> {quest.audioGuides.length}
+                      </p>
+
+                      {quest.locationHint ? (
+                        <p>
+                          <strong>Helyszín tipp:</strong> {quest.locationHint}
+                        </p>
+                      ) : null}
+                    </div>
+
+                    <div className="mt-6">
+                      <Link
+                        href={`/quests/${quest.slug}`}
+                        className="inline-flex rounded-lg bg-[#193226] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#255f46]"
+                      >
+                        {completed ? "Újrajátszás" : "Küldetés megnyitása"}
+                      </Link>
+                    </div>
                   </div>
                 </article>
               );
