@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type Props = {
   slug: string;
@@ -10,6 +10,16 @@ export default function AiFieldBrief({ slug }: Props) {
   const [brief, setBrief] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [audioLoading, setAudioLoading] = useState(false);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl);
+      }
+    };
+  }, [audioUrl]);
 
   async function loadBrief() {
     setLoading(true);
@@ -27,10 +37,54 @@ export default function AiFieldBrief({ slug }: Props) {
       }
 
       setBrief(data.data?.brief ?? null);
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl);
+        setAudioUrl(null);
+      }
     } catch {
       setError("Most nem sikerult kapcsolatot letrehozni az AI terepbriefhez.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadAudio() {
+    if (!brief) {
+      return;
+    }
+
+    setAudioLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/quests/${slug}/brief-audio`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ text: brief }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        setError(
+          data.message ?? "Nem sikerult letrehozni a hangos AI briefet."
+        );
+        return;
+      }
+
+      const blob = await response.blob();
+      const nextAudioUrl = URL.createObjectURL(blob);
+
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl);
+      }
+
+      setAudioUrl(nextAudioUrl);
+    } catch {
+      setError("Most nem sikerult letrehozni a hangos AI briefet.");
+    } finally {
+      setAudioLoading(false);
     }
   }
 
@@ -63,6 +117,29 @@ export default function AiFieldBrief({ slug }: Props) {
       {brief ? (
         <div className="mt-5 rounded-lg bg-[#fffaf0] p-4">
           <p className="whitespace-pre-line text-[#52645c]">{brief}</p>
+
+          <div className="mt-4 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={loadAudio}
+              disabled={audioLoading}
+              className="inline-flex rounded-lg border border-[#d9c8a4] bg-white px-4 py-3 font-semibold text-[#193226] disabled:opacity-60"
+            >
+              {audioLoading ? "Hang keszul..." : "Hangos AI brief"}
+            </button>
+          </div>
+
+          {audioUrl ? (
+            <audio
+              controls
+              autoPlay
+              preload="none"
+              className="mt-4 w-full"
+              src={audioUrl}
+            >
+              A bongeszod nem tamogatja a hang lejatszasat.
+            </audio>
+          ) : null}
         </div>
       ) : null}
     </section>
