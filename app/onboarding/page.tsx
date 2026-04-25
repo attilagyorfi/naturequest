@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
-import { isOnboardingComplete } from "@/lib/onboarding";
 import OnboardingForm from "@/components/onboarding-form";
+import { isOnboardingComplete } from "@/lib/onboarding";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 

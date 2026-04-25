@@ -106,13 +106,13 @@ export default async function DashboardPage() {
         <header className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#7b5f2e]">
-              Hostabla
+              Hőstábla
             </p>
             <h1 className="mt-2 text-4xl font-bold tracking-tight">
               {user.profile?.characterName}
             </h1>
             <p className="mt-2 text-[#52645c]">
-              {characterClass?.label ?? "Hos"} | {user.level}. szint |{" "}
+              {characterClass?.label ?? "Hős"} | {user.level}. szint |{" "}
               {user.points} XP
             </p>
           </div>
@@ -121,7 +121,7 @@ export default async function DashboardPage() {
 
         <section className="mt-8 grid gap-4 md:grid-cols-3">
           <div className="rounded-lg border border-[#d9c8a4] bg-white p-5">
-            <p className="text-sm text-[#52645c]">Teljesitett kuldetesek</p>
+            <p className="text-sm text-[#52645c]">Teljesített küldetések</p>
             <p className="mt-2 text-3xl font-bold">
               {progress.completedQuests}/{progress.totalQuests}
             </p>
@@ -131,7 +131,7 @@ export default async function DashboardPage() {
             <p className="mt-2 text-3xl font-bold">{user.userBadges.length}</p>
           </div>
           <div className="rounded-lg border border-[#d9c8a4] bg-white p-5">
-            <p className="text-sm text-[#52645c]">Kovetkezo szintig</p>
+            <p className="text-sm text-[#52645c]">Következő szintig</p>
             <p className="mt-2 text-3xl font-bold">
               {progress.xpUntilNextLevel} XP
             </p>
@@ -142,14 +142,14 @@ export default async function DashboardPage() {
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#7b5f2e]">
-                Kaland elorehaladas
+                Kaland előrehaladás
               </p>
               <h2 className="mt-2 text-2xl font-bold">
-                {progress.completionPercent}% bejarva
+                {progress.completionPercent}% bejárva
               </h2>
             </div>
             <p className="text-sm text-[#52645c]">
-              {progress.remainingQuests} kuldetes var meg rad
+              {progress.remainingQuests} küldetés vár még rád
             </p>
           </div>
           <div className="mt-5 h-3 overflow-hidden rounded bg-[#eadfca]">
@@ -159,7 +159,7 @@ export default async function DashboardPage() {
             />
           </div>
           <p className="mt-3 text-sm text-[#52645c]">
-            Kovetkezo szint celja: {progress.nextLevelTarget} XP.
+            Következő szint célja: {progress.nextLevelTarget} XP.
           </p>
         </section>
 
@@ -169,7 +169,7 @@ export default async function DashboardPage() {
               <div className="relative min-h-[280px] bg-[#d7e7d7]">
                 <Image
                   src={recommendedQuestCover}
-                  alt={`${recommendedQuest.title} ajanlott kuldetes boritokepe`}
+                  alt={`${recommendedQuest.title} ajánlott küldetés borítóképe`}
                   fill
                   preload
                   sizes="(max-width: 1024px) 100vw, 50vw"
@@ -188,7 +188,7 @@ export default async function DashboardPage() {
 
               <div className="p-6">
                 <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#7b5f2e]">
-                  Ajanlott osveny
+                  Ajánlott ösvény
                 </p>
                 <p className="mt-3 text-lg text-[#52645c]">
                   {recommendedQuest.shortDescription}
@@ -209,7 +209,7 @@ export default async function DashboardPage() {
 
                   <div className="rounded-lg bg-[#fffaf0] px-4 py-3">
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#7b5f2e]">
-                      Becsult ido
+                      Becsült idő
                     </p>
                     <p className="mt-1 text-xl font-bold">
                       {recommendedQuest.estimatedMinutes ?? "?"} perc
@@ -218,7 +218,7 @@ export default async function DashboardPage() {
 
                   <div className="rounded-lg bg-[#fffaf0] px-4 py-3">
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#7b5f2e]">
-                      Temakor
+                      Témakör
                     </p>
                     <p className="mt-1 text-xl font-bold">
                       {recommendedQuest.category.name}
@@ -240,13 +240,13 @@ export default async function DashboardPage() {
                     href={`/quests/${recommendedQuest.slug}`}
                     className="inline-flex rounded-lg bg-[#1b4332] px-5 py-3 font-semibold text-white"
                   >
-                    Kaland inditasa
+                    Kaland indítása
                   </Link>
                   <Link
                     href="/quests"
                     className="inline-flex rounded-lg border border-[#d9c8a4] bg-white px-5 py-3 font-semibold text-[#193226]"
                   >
-                    Osszes kuldetes
+                    Összes küldetés
                   </Link>
                 </div>
               </div>
@@ -254,10 +254,10 @@ export default async function DashboardPage() {
           ) : (
             <div className="p-6">
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#7b5f2e]">
-                Ajanlott osveny
+                Ajánlott ösvény
               </p>
               <p className="mt-3 text-[#52645c]">
-                A Kronikasok most keszitik a kovetkezo osvenyt. Nezz vissza
+                A Krónikások most készítik a következő ösvényt. Nézz vissza
                 hamarosan.
               </p>
             </div>
@@ -266,7 +266,7 @@ export default async function DashboardPage() {
 
         <section className="mt-8 grid gap-4 lg:grid-cols-2">
           <div className="rounded-lg border border-[#d9c8a4] bg-white p-6">
-            <h2 className="text-xl font-bold">Legutobbi teljesitesek</h2>
+            <h2 className="text-xl font-bold">Legutóbbi teljesítések</h2>
             {user.questProgress.length > 0 ? (
               <ul className="mt-4 space-y-3">
                 {user.questProgress.slice(0, 4).map((progressItem) => (
@@ -284,13 +284,13 @@ export default async function DashboardPage() {
               </ul>
             ) : (
               <p className="mt-4 text-[#52645c]">
-                Az elso kuldetes utan itt jelennek meg a hostetteid.
+                Az első küldetés után itt jelennek meg a hőstetteid.
               </p>
             )}
           </div>
 
           <div className="rounded-lg border border-[#d9c8a4] bg-white p-6">
-            <h2 className="text-xl font-bold">Friss kronika</h2>
+            <h2 className="text-xl font-bold">Friss krónika</h2>
             {chronicleEntries.length > 0 ? (
               <ul className="mt-4 space-y-3">
                 {chronicleEntries.map((entry) => (
@@ -314,7 +314,7 @@ export default async function DashboardPage() {
               </ul>
             ) : (
               <p className="mt-4 text-[#52645c]">
-                A kronika az elso kalandod utan kezd irodni.
+                A krónika az első kalandod után kezd íródni.
               </p>
             )}
           </div>
