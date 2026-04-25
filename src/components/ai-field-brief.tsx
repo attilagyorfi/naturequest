@@ -8,6 +8,7 @@ type Props = {
 
 export default function AiFieldBrief({ slug }: Props) {
   const [brief, setBrief] = useState<string | null>(null);
+  const [narrationStyle, setNarrationStyle] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [audioLoading, setAudioLoading] = useState(false);
@@ -37,6 +38,7 @@ export default function AiFieldBrief({ slug }: Props) {
       }
 
       setBrief(data.data?.brief ?? null);
+      setNarrationStyle(data.data?.narrationStyle ?? null);
       if (audioUrl) {
         URL.revokeObjectURL(audioUrl);
         setAudioUrl(null);
@@ -116,6 +118,12 @@ export default function AiFieldBrief({ slug }: Props) {
 
       {brief ? (
         <div className="mt-5 rounded-lg bg-[#fffaf0] p-4">
+          {narrationStyle ? (
+            <p className="mb-3 text-sm font-semibold text-[#7b5f2e]">
+              Hangulat: {narrationStyle}
+            </p>
+          ) : null}
+
           <p className="whitespace-pre-line text-[#52645c]">{brief}</p>
 
           <div className="mt-4 flex flex-wrap gap-3">

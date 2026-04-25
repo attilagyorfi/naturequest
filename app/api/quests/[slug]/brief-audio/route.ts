@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { getBriefNarrationProfile } from "@/lib/ai-brief";
+import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
 const briefAudioSchema = z.object({
@@ -26,7 +28,7 @@ export async function POST(request: Request, context: RouteContext) {
       );
     }
 
-    await context.params;
+    const { slug } = await context.params;
 
     const body = await request.json();
     const parsed = briefAudioSchema.safeParse(body);
@@ -51,6 +53,27 @@ export async function POST(request: Request, context: RouteContext) {
       );
     }
 
+    const quest = await prisma.quest.findUnique({
+      where: {
+        slug,
+      },
+      include: {
+        category: true,
+      },
+    });
+
+    if (!quest || quest.status !== "PUBLISHED") {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "A kuldetes nem talalhato.",
+        },
+        { status: 404 }
+      );
+    }
+
+    const narrationProfile = getBriefNarrationProfile(quest);
+
     const response = await fetch("https://api.openai.com/v1/audio/speech", {
       method: "POST",
       headers: {
@@ -59,10 +82,9 @@ export async function POST(request: Request, context: RouteContext) {
       },
       body: JSON.stringify({
         model: "gpt-4o-mini-tts",
-        voice: "coral",
+        voice: narrationProfile.voice,
         input: parsed.data.text,
-        instructions:
-          "Beszelj magyarul, meleg, nyugodt, gyerekbarat hangnemben, termeszetes ritmussal.",
+        instructions: narrationProfile.speechTone,
         response_format: "mp3",
       }),
     });

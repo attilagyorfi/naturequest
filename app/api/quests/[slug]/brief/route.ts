@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { getBriefNarrationProfile } from "@/lib/ai-brief";
 import { prisma } from "@/lib/prisma";
 
 type RouteContext = {
@@ -94,11 +95,14 @@ export async function POST(_: Request, context: RouteContext) {
           data: {
             brief: buildFallbackBrief(quest),
             source: "fallback",
+            narrationStyle: getBriefNarrationProfile(quest).spokenLabel,
           },
         },
         { status: 200 }
       );
     }
+
+    const narrationProfile = getBriefNarrationProfile(quest);
 
     const prompt = [
       `Kuldetes neve: ${quest.title}`,
@@ -119,7 +123,7 @@ export async function POST(_: Request, context: RouteContext) {
       body: JSON.stringify({
         model: "gpt-4.1-mini",
         instructions:
-          "Te a NatureQuest terepvezetoje vagy. Irj magyarul egy rovid, baratsagos, gyerekbarat terepbriefet 3-4 mondatban. Legyen konkret, batorito, es segitsen, mire figyeljen a jatekos indulaskor. Ne hasznalj listat, ne irj cimet, ne talalj ki veszelyes tanacsot.",
+          `Te a NatureQuest terepvezetoje vagy. Irj magyarul egy rovid, baratsagos, gyerekbarat terepbriefet 3-4 mondatban. Legyen konkret, batorito, es segitsen, mire figyeljen a jatekos indulaskor. Ne hasznalj listat, ne irj cimet, ne talalj ki veszelyes tanacsot. Hangnem: ${narrationProfile.textTone}`,
         input: prompt,
         text: {
           format: {
@@ -138,6 +142,7 @@ export async function POST(_: Request, context: RouteContext) {
           data: {
             brief: fallbackBrief,
             source: "fallback",
+            narrationStyle: narrationProfile.spokenLabel,
           },
         },
         { status: 200 }
@@ -153,6 +158,7 @@ export async function POST(_: Request, context: RouteContext) {
         data: {
           brief,
           source: payload.output_text ? "openai" : "fallback",
+          narrationStyle: narrationProfile.spokenLabel,
         },
       },
       { status: 200 }
