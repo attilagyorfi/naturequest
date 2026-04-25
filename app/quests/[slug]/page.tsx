@@ -2,7 +2,6 @@ import { existsSync, readdirSync } from "node:fs";
 import path from "node:path";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { auth } from "@/auth";
 import AiFieldBrief from "@/components/ai-field-brief";
 import QuestPlayer from "@/components/quest-player";
 import {
@@ -26,7 +25,6 @@ export const dynamic = "force-dynamic";
 
 export default async function QuestDetailPage({ params }: PageProps) {
   const { slug } = await params;
-  const session = await auth();
 
   const quest = await prisma.quest.findUnique({
     where: {
@@ -209,7 +207,6 @@ export default async function QuestDetailPage({ params }: PageProps) {
 
           <AiFieldBrief
             slug={quest.slug}
-            canUseAiBrief={Boolean(session?.user?.email)}
           />
         </section>
 

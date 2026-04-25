@@ -4,10 +4,9 @@ import { useState } from "react";
 
 type Props = {
   slug: string;
-  canUseAiBrief: boolean;
 };
 
-export default function AiFieldBrief({ slug, canUseAiBrief }: Props) {
+export default function AiFieldBrief({ slug }: Props) {
   const [brief, setBrief] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -52,18 +51,12 @@ export default function AiFieldBrief({ slug, canUseAiBrief }: Props) {
         <button
           type="button"
           onClick={loadBrief}
-          disabled={!canUseAiBrief || loading}
+          disabled={loading}
           className="inline-flex rounded-lg bg-[#1b4332] px-4 py-3 font-semibold text-white disabled:opacity-60"
         >
           {loading ? "Brief keszul..." : "AI brief kerese"}
         </button>
       </div>
-
-      {!canUseAiBrief ? (
-        <p className="mt-4 text-sm text-[#7b5f2e]">
-          Az AI brief bejelentkezes utan erheto el.
-        </p>
-      ) : null}
 
       {error ? <p className="mt-4 text-sm text-[#7b5f2e]">{error}</p> : null}
 
